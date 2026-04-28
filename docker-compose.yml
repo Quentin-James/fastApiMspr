@@ -1,0 +1,74 @@
+services:
+  # ─── Microservice IA ────────────────────────────────────────────────────────
+  fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mspr-ia
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    env_file:
+      - .env
+    environment:
+      - MONGODB_URL=mongodb://mongo:27017
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - mspr-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8085/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ─── MongoDB ────────────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    container_name: mspr-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - mongo_config:/data/configdb
+    environment:
+      - MONGO_INITDB_DATABASE=mspr_ia
+    networks:
+      - mspr-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ─── Mongo Express (UI optionnelle, dev uniquement) ──────────────────────
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: mspr-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - mspr-network
+    profiles:
+      - dev  # Démarrer avec : docker-compose --profile dev up
+
+volumes:
+  mongo_data:
+  mongo_config:
+
+networks:
+  mspr-network:
+    driver: bridge
