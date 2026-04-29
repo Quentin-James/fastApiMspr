@@ -17,7 +17,7 @@ from app.models.sport import (
     UserSportProfile,
     WorkoutSession,
 )
-from app.services.nlp import generate_sport_message
+from app.services.nlp import generate_sport_message, interpret_physical_limitations
 
 logger = logging.getLogger(__name__)
 
@@ -57,28 +57,37 @@ def _filter_exercises(
     level: FitnessLevel,
     equipment: Equipment,
     limitations: List[str],
+    excluded_keywords: List[str] = [],
 ) -> List[Dict[str, Any]]:
-    """Filtre les exercices selon les critères du profil."""
+    """
+    Filtre les exercices selon les critères du profil.
+
+    Deux couches de filtrage :
+    1. Contraindications hardcodées (substring bidirectionnel) — compatibilité avec les
+       limitations médicales connues ('douleur genou', 'hernie discale', …)
+    2. Mots-clés sémantiques issus du LLM (excluded_keywords) — couvre les limitations
+       en langage naturel libre ('jambe en moins', 'cancer', 'bras cassé', …)
+       en croisant avec muscles_targeted, name et description de chaque exercice.
+    """
     filtered = []
     limitations_lower = [l.lower() for l in limitations]
 
     for key, ex in EXERCISE_DB.items():
-        # Vérifier l'équipement
+        # ── Équipement ────────────────────────────────────────────────────────
         if equipment == Equipment.none and ex["equipment"] not in ["none"]:
             continue
         if equipment == Equipment.home and ex["equipment"] not in ["none", "home"]:
             continue
-        # Gym autorise tout
 
-        # Vérifier le niveau
+        # ── Niveau ───────────────────────────────────────────────────────────
         if level.value not in ex["level"]:
             continue
 
-        # Vérifier l'objectif
+        # ── Objectif ─────────────────────────────────────────────────────────
         if objective.value not in ex["objectives"]:
             continue
 
-        # Vérifier les contre-indications
+        # ── Couche 1 : contraindications hardcodées (substring) ───────────────
         excluded = False
         for contra in ex["contraindications"]:
             if any(lim in contra.lower() or contra.lower() in lim for lim in limitations_lower):
@@ -86,6 +95,16 @@ def _filter_exercises(
                 break
         if excluded:
             continue
+
+        # ── Couche 2 : mots-clés sémantiques issus du LLM ────────────────────
+        if excluded_keywords:
+            searchable = (
+                " ".join(ex["muscles_targeted"]).lower()
+                + " " + ex.get("name", "").lower()
+                + " " + ex.get("description", "").lower()
+            )
+            if any(kw in searchable for kw in excluded_keywords):
+                continue
 
         filtered.append({**ex, "key": key})
 
@@ -162,18 +181,36 @@ async def build_weekly_sport_program(
     previous_feedbacks: List[FeedbackRequest] = [],
 ) -> SportRecommendation:
     """Génère un programme sportif hebdomadaire complet."""
+    # Interpréter les limitations en langage naturel via LLM
+    # ex: "jambe en moins" → ["jambes", "quadriceps", "ischio-jambiers", "course", …]
+    excluded_keywords = await interpret_physical_limitations(profile.limitations)
+
     available_exercises = _filter_exercises(
         profile.objective,
         profile.fitness_level,
         profile.equipment,
         profile.limitations,
+        excluded_keywords=excluded_keywords,
     )
 
-    # Ajouter yoga/récupération comme fallback toujours disponible
-    recovery_exercises = [
+    # Exercices de récupération — filtrés selon les mots-clés sémantiques
+    # (ex : la marche active est exclue si "jambe en moins")
+    _recovery_pool = [
         {**EXERCISE_DB["yoga_stretch"], "key": "yoga_stretch"},
         {**EXERCISE_DB["walking"], "key": "walking"},
+        {**EXERCISE_DB["foam_rolling"], "key": "foam_rolling"},
     ]
+    recovery_exercises = [
+        ex for ex in _recovery_pool
+        if not excluded_keywords or not any(
+            kw in (
+                " ".join(ex["muscles_targeted"]).lower()
+                + " " + ex.get("name", "").lower()
+                + " " + ex.get("description", "").lower()
+            )
+            for kw in excluded_keywords
+        )
+    ] or _recovery_pool[:1]  # au minimum le yoga si tout est filtré
 
     weekly_sessions: List[WorkoutSession] = []
     all_days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
@@ -226,6 +263,17 @@ async def build_weekly_sport_program(
     progression_notes = _compute_progression_notes(
         profile.fitness_level, profile.objective, previous_feedbacks
     )
+
+    if profile.limitations:
+        lim_str = ", ".join(profile.limitations)
+        if excluded_keywords:
+            kw_str = ", ".join(excluded_keywords[:8])
+            progression_notes += (
+                f" | Limitations prises en compte : {lim_str} "
+                f"(zones exclues : {kw_str})."
+            )
+        else:
+            progression_notes += f" | Limitations déclarées : {lim_str} — adaptez les exercices selon votre ressenti."
     personalized_message = await generate_sport_message(
         profile.objective.value,
         profile.fitness_level.value,

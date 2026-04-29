@@ -10,7 +10,7 @@ import sys
 import httpx
 from PIL import Image, ImageDraw
 
-BASE_URL = "http://localhost:8086"
+BASE_URL = "http://localhost:8087"
 
 
 def create_test_image() -> bytes:
