@@ -13,25 +13,44 @@ logger = logging.getLogger(__name__)
 
 
 async def _call_huggingface_nlp(prompt: str, max_tokens: int = 200) -> Optional[str]:
-    """Génération de texte via Hugging Face Inference API."""
+    """
+    Génération de texte via Hugging Face Inference API.
+    Utilise google/flan-t5-large (disponible sur le tier gratuit HF).
+    Retourne None en cas d'erreur pour tomber sur le message par défaut.
+    """
     if not settings.huggingface_api_token:
         return None
 
-    api_url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
+    # flan-t5-large : disponible sur l'API gratuite HF, bon pour la génération
+    # de texte court en instruction-following
+    api_url = "https://router.huggingface.co/hf-inference/models/google/flan-t5-large"
     headers = {"Authorization": f"Bearer {settings.huggingface_api_token}"}
     payload = {
         "inputs": prompt,
         "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
     }
-    async with httpx.AsyncClient(timeout=45) as client:
-        response = await client.post(api_url, headers=headers, json=payload)
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            response = await client.post(api_url, headers=headers, json=payload)
+
+        if response.status_code == 503:
+            # Modèle en cold start HF — pas une erreur fatale
+            logger.warning("NLP HF : modèle en cours de chargement (503), utilisation du message par défaut.")
+            return None
+
         response.raise_for_status()
         data = response.json()
 
-    if isinstance(data, list) and data:
-        generated = data[0].get("generated_text", "")
-        # Retirer le prompt du résultat si HF le répète
-        return generated.replace(prompt, "").strip()
+        if isinstance(data, list) and data:
+            generated = data[0].get("generated_text", "").strip()
+            if generated and generated != prompt:
+                return generated
+        elif isinstance(data, dict) and "error" in data:
+            logger.warning("NLP HF erreur API : %s", data["error"])
+
+    except Exception as exc:
+        logger.warning("NLP HF indisponible : %s — message par défaut utilisé.", exc)
+
     return None
 
 

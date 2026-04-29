@@ -138,7 +138,7 @@ async def _call_huggingface(image_bytes: bytes) -> List[FoodItem]:
     if not settings.huggingface_api_token:
         raise RuntimeError("HUGGINGFACE_API_TOKEN non configuré.")
 
-    api_url = f"https://api-inference.huggingface.co/models/{settings.huggingface_food_model}"
+    api_url = f"https://router.huggingface.co/hf-inference/models/{settings.huggingface_food_model}"
     headers = {
         "Authorization": f"Bearer {settings.huggingface_api_token}",
         "Content-Type": "application/octet-stream",
@@ -230,12 +230,19 @@ async def analyze_food_image(image_bytes: bytes) -> tuple[List[FoodItem], str]:
     last_error = "Aucune API configurée."
 
     # 1. Tentative Hugging Face
-    foods = await _call_huggingface(image_bytes)
-    if foods:
-        logger.info("Vision : %d aliment(s) détecté(s) via Hugging Face.", len(foods))
-        return foods, "huggingface"
-    # Liste vide = le modèle n'a rien retourné (image floue, etc.)
-    last_error = "Hugging Face n'a détecté aucun aliment sur cette image."
+    try:
+        foods = await _call_huggingface(image_bytes)
+        if foods:
+            logger.info("Vision : %d aliment(s) détecté(s) via Hugging Face.", len(foods))
+            return foods, "huggingface"
+        # Liste vide = le modèle n'a rien retourné (image floue, etc.)
+        last_error = "Hugging Face n'a détecté aucun aliment sur cette image."
+    except RuntimeError as exc:
+        last_error = str(exc)
+        logger.warning("Hugging Face indisponible : %s — passage au fallback.", exc)
+    except Exception as exc:
+        last_error = str(exc)
+        logger.warning("Erreur Hugging Face : %s", exc)
 
     # 2. Fallback Google Vision
     try:
@@ -251,11 +258,13 @@ async def analyze_food_image(image_bytes: bytes) -> tuple[List[FoodItem], str]:
         last_error = str(exc)
         logger.error("Erreur Google Vision : %s", exc)
 
-    # 3. Mode mock en développement
-    if settings.app_env in ("development", "dev"):
+    # 3. Mode mock uniquement si aucune clé API n'est configurée (pas de token = pas d'IA dispo)
+    no_api_configured = not settings.huggingface_api_token and not settings.google_vision_api_key
+    if settings.app_env in ("development", "dev") and no_api_configured:
         return _mock_analysis()
 
-    # 4. Production sans API disponible → erreur structurée
+    # 4. API configurée mais indisponible (ou production) → erreur structurée
     raise RuntimeError(
-        f"Aucune API de vision disponible. Dernière erreur : {last_error}"
+        f"Aucune API de vision disponible (Hugging Face et Google Vision ont échoué). "
+        f"Dernière erreur : {last_error}"
     )

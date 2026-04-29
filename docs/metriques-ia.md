@@ -24,10 +24,13 @@ python -m pytest tests/test_vision_metrics.py -v --tb=short
 
 | API | Précision | Rappel | F1 | Latence moy. |
 |---|---|---|---|---|
-| Hugging Face (vit-base-patch16-224) | À mesurer | À mesurer | À mesurer | À mesurer |
+| Hugging Face (`nateraw/food`) | À mesurer | À mesurer | À mesurer | À mesurer |
 | Google Vision API | À mesurer | À mesurer | À mesurer | À mesurer |
 
-> **Note :** Les métriques réelles doivent être mesurées avec une clé API Hugging Face valide et un jeu de données annoté. Le script de benchmark est à compléter dans `tests/test_vision_metrics.py`.
+> **Note :** Les métriques réelles doivent être mesurées avec un token HuggingFace valide
+> (généré sur huggingface.co/settings/tokens) et un jeu de données annoté.
+> Le modèle `nateraw/food` est un ViT fine-tuné sur Food-101 (101 catégories alimentaires).
+> L'URL d'inférence correcte est `https://router.huggingface.co/hf-inference/models/nateraw/food`.
 
 ## Facteurs d'influence
 

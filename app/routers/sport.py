@@ -32,7 +32,10 @@ async def recommend_sport(
     repo: RecommendationRepository = Depends(get_repo),
 ) -> SportRecommendation:
     # Récupérer les feedbacks existants du patient pour la progression adaptative
-    past_programs = await repo.get_sport_program_by_id("000000000000000000000000")  # placeholder
+    try:
+        await repo.get_sport_program_by_id("000000000000000000000000")  # placeholder
+    except Exception:
+        pass
     previous_feedbacks = []  # En prod : charger les feedbacks MongoDB
 
     try:
@@ -44,12 +47,15 @@ async def recommend_sport(
             detail=f"Erreur interne : {str(exc)}",
         )
 
-    # Persister en MongoDB
-    doc = recommendation.model_dump()
-    doc["patientId"] = profile.patient_id
-    doc["type"] = "sport_program"
-    program_id = await repo.save_sport_program(doc)
-    logger.info("Programme sportif sauvegardé : %s", program_id)
+    # Persister en MongoDB (non bloquant)
+    try:
+        doc = recommendation.model_dump()
+        doc["patientId"] = profile.patient_id
+        doc["type"] = "sport_program"
+        program_id = await repo.save_sport_program(doc)
+        logger.info("Programme sportif sauvegardé : %s", program_id)
+    except Exception as exc:
+        logger.warning("Impossible de sauvegarder le programme sportif en MongoDB : %s", exc)
 
     return recommendation
 

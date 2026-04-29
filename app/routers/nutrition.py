@@ -101,14 +101,17 @@ async def analyze_photo(
         confidence_avg=avg_confidence,
     )
 
-    # Sauvegarder l'analyse en MongoDB
-    await repo.save_recommendation({
-        "type": "photo_analysis",
-        "patientId": "anonymous",
-        "api_used": api_used,
-        "confidence_score": avg_confidence,
-        "foods_count": len(foods),
-    })
+    # Sauvegarder l'analyse en MongoDB (non bloquant)
+    try:
+        await repo.save_recommendation({
+            "type": "photo_analysis",
+            "patientId": "anonymous",
+            "api_used": api_used,
+            "confidence_score": avg_confidence,
+            "foods_count": len(foods),
+        })
+    except Exception as exc:
+        logger.warning("Impossible de sauvegarder l'analyse photo en MongoDB : %s", exc)
 
     return response
 
@@ -137,11 +140,14 @@ async def recommend_nutrition(
             detail=f"Erreur interne : {str(exc)}",
         )
 
-    # Persister en MongoDB
-    doc = recommendation.model_dump()
-    doc["patientId"] = profile.patient_id
-    doc["type"] = "nutrition_plan"
-    recommendation_id = await repo.save_meal_plan(doc)
-    logger.info("Plan nutritionnel sauvegardé : %s", recommendation_id)
+    # Persister en MongoDB (non bloquant)
+    try:
+        doc = recommendation.model_dump()
+        doc["patientId"] = profile.patient_id
+        doc["type"] = "nutrition_plan"
+        recommendation_id = await repo.save_meal_plan(doc)
+        logger.info("Plan nutritionnel sauvegardé : %s", recommendation_id)
+    except Exception as exc:
+        logger.warning("Impossible de sauvegarder le plan nutritionnel en MongoDB : %s", exc)
 
     return recommendation

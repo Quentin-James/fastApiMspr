@@ -22,6 +22,12 @@ Les recommandations sont des documents JSON de structure variable (plans de repa
 
 La vision alimentaire suit une cascade : Hugging Face (priorité) → Google Vision API (fallback) → erreur structurée 503. Cela garantit la disponibilité du service même si une API est indisponible.
 
+Le mode mock (`MOCK_FOODS`) ne s'active qu'en `development` **et** uniquement si aucun token API n'est configuré. Avec un token défini, un échec IA remonte une erreur 503 explicite plutôt que des données fictives.
+
+**URL de l'API HuggingFace (mise à jour 2024-2025) :**
+L'ancienne URL `https://api-inference.huggingface.co/models/{model}` a migré vers
+`https://router.huggingface.co/hf-inference/models/{model}`. L'ancienne URL retourne 404.
+
 ## Moteur de recommandations
 
 Le moteur nutritionnel et sportif est basé sur des **règles métier** (filtrage multi-critères) combinées à la **génération NLP** pour personnaliser les messages. Cette approche hybride évite la dépendance totale à des modèles IA dont la disponibilité et le coût peuvent varier.
