@@ -52,18 +52,22 @@ class UserNutritionProfile(BaseModel):
     diet_type: DietType = DietType.omnivore
     daily_calories_target: Optional[float] = None
     excluded_foods: List[str] = Field(default_factory=list)
+    clerk_user_id: Optional[str] = Field(
+        default=None,
+        description="ID Clerk (user_xxx) - enrichit depuis Java et push le resultat",
+    )
 
 
 class Meal(BaseModel):
     name: str
-    meal_type: str  # breakfast, lunch, dinner, snack
+    meal_type: str
     foods: List[str]
     macros: Macros
     recipe_hint: Optional[str] = None
 
 
 class DayPlan(BaseModel):
-    day: str  # Lundi, Mardi, etc.
+    day: str
     meals: List[Meal]
     total_macros: Macros
 

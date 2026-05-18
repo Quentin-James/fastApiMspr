@@ -56,6 +56,12 @@ class UserSportProfile(BaseModel):
         description="ex: ['douleur genou droit', 'hernie discale']",
     )
     session_duration_max_minutes: int = 60
+    # Identifiant Clerk : si fourni, FastAPI enrichit le profil depuis Java
+    # et pousse le résultat vers Java après génération.
+    clerk_user_id: Optional[str] = Field(
+        default=None,
+        description="ID Clerk de l'utilisateur (user_xxx) pour l'intégration Java",
+    )
 
 
 class SportRecommendation(BaseModel):

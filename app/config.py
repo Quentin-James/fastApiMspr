@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     google_vision_api_key: str = ""
 
     # Backend Spring Boot
-    spring_backend_url: str = "http://localhost:8080"
+    spring_backend_url: str = "http://localhost:8084"
 
     # NLP / Ollama
     ollama_url: str = "http://localhost:11434"
