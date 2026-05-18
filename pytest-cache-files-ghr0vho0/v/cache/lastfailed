@@ -1,0 +1,9 @@
+{
+  "tests/test_endpoints.py::test_nutrition_recommend_success": true,
+  "tests/test_endpoints.py::test_nutrition_recommend_muscle_gain": true,
+  "tests/test_endpoints.py::test_nutrition_recommend_vegan": true,
+  "tests/test_endpoints.py::test_sport_recommend_success": true,
+  "tests/test_endpoints.py::test_sport_recommend_muscle_gain_gym": true,
+  "tests/test_endpoints.py::test_sport_feedback_success": true,
+  "tests/test_endpoints.py::test_get_recommendations_history": true
+}
