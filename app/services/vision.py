@@ -79,6 +79,21 @@ async def _call_huggingface(image_bytes: bytes) -> List[FoodItem]:
 
     logger.debug("HF status=%s body=%s", response.status_code, response.text[:200])
 
+    if response.status_code == 401:
+        raise RuntimeError(
+            "Token Hugging Face invalide ou expiré (401). "
+            "Vérifiez HUGGINGFACE_API_TOKEN dans votre .env."
+        )
+    if response.status_code == 403:
+        raise RuntimeError(
+            f"Accès refusé au modèle {settings.huggingface_food_model} (403). "
+            "Vérifiez les permissions du token ou acceptez les conditions du modèle sur HuggingFace."
+        )
+    if response.status_code == 404:
+        raise RuntimeError(
+            f"Modèle Hugging Face introuvable : {settings.huggingface_food_model} (404). "
+            "Vérifiez HUGGINGFACE_FOOD_MODEL dans votre .env."
+        )
     if response.status_code == 503:
         data = response.json()
         estimated = data.get("estimated_time", "?")
@@ -180,8 +195,12 @@ async def analyze_food_image(image_bytes: bytes) -> tuple[List[FoodItem], str]:
         logger.error("Erreur Google Vision : %s", exc)
 
     # En développement : fallback mock si toutes les APIs ont échoué (token configuré mais inaccessible inclus)
-    if settings.app_env in ("development", "dev"):
-        logger.warning("⚠️ Toutes les APIs de vision ont échoué → mode MOCK. Dernière erreur : %s", last_error)
+    env = settings.app_env.strip().lower()
+    if env in ("development", "dev"):
+        logger.warning("⚠️ Toutes les APIs de vision ont échoué → mode MOCK (APP_ENV=%s). Dernière erreur : %s", settings.app_env, last_error)
         return _mock_analysis()
 
-    raise RuntimeError(f"Aucune API de vision disponible. Dernière erreur : {last_error}")
+    raise RuntimeError(
+        f"Aucune API de vision disponible (Hugging Face et Google Vision ont échoué). "
+        f"Dernière erreur : {last_error}"
+    )

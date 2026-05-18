@@ -31,9 +31,18 @@ async def _call_huggingface_nlp(prompt: str, max_tokens: int = 200) -> Optional[
         "parameters": {"max_new_tokens": max_tokens, "temperature": 0.7},
     }
     try:
-        async with httpx.AsyncClient(timeout=8) as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(api_url, headers=headers, json=payload)
 
+        if response.status_code == 401:
+            logger.warning("NLP HF : token invalide ou expiré (401).")
+            return None
+        if response.status_code == 403:
+            logger.warning("NLP HF : accès refusé au modèle (403). Vérifiez les permissions du token.")
+            return None
+        if response.status_code == 404:
+            logger.warning("NLP HF : modèle introuvable (404). Vérifiez le nom du modèle.")
+            return None
         if response.status_code == 503:
             # Modèle en cold start HF — pas une erreur fatale
             logger.warning("NLP HF : modèle en cours de chargement (503), utilisation du message par défaut.")
