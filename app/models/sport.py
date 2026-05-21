@@ -74,9 +74,3 @@ class SportRecommendation(BaseModel):
     confidence_score: float = Field(ge=0.0, le=1.0, default=0.90)
 
 
-class FeedbackRequest(BaseModel):
-    rating: int = Field(ge=1, le=5, description="Note de 1 à 5")
-    comment: Optional[str] = None
-    too_hard: bool = False
-    too_easy: bool = False
-    exercises_skipped: List[str] = Field(default_factory=list)

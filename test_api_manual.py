@@ -1,5 +1,5 @@
 """
-Script de test manuel — à lancer depuis ta machine Windows.
+Script de test manuel — à lancer depuis Windows.
 Lance le serveur d'abord : uvicorn app.main:app --reload --port 8085
 Puis : python test_api_manual.py
 """

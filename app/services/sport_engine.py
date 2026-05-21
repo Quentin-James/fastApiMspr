@@ -11,7 +11,6 @@ from app.data.exercise_db import EXERCISE_DB, RECOVERY_EXERCISE_KEYS
 from app.models.sport import (
     Equipment,
     Exercise,
-    FeedbackRequest,
     FitnessLevel,
     SportObjective,
     SportRecommendation,
@@ -141,35 +140,18 @@ def _build_session(
 
 # ─── Progression adaptative ───────────────────────────────────────────────────
 
-def _compute_progression_notes(
-    level: FitnessLevel,
-    objective: SportObjective,
-    feedbacks: List[FeedbackRequest] = [],
-) -> str:
-    """Génère les conseils de progression, adaptés aux retours utilisateur."""
-    base = {
+def _compute_progression_notes(level: FitnessLevel, objective: SportObjective) -> str:
+    """Génère les conseils de progression selon le niveau et l'objectif."""
+    return {
         FitnessLevel.beginner:     "Commencez avec des charges légères. Maîtrisez la technique avant d'augmenter l'intensité.",
         FitnessLevel.intermediate: "Augmentez la charge de 2,5-5 % dès que vous réussissez la fourchette haute sur 2 séances.",
         FitnessLevel.advanced:     "Variez les techniques (drop-sets, super-sets) et ciblez une surcharge de 1-3 % par semaine.",
-    }
-    note = base[level]
-
-    if feedbacks:
-        avg_rating = sum(f.rating for f in feedbacks) / len(feedbacks)
-        if avg_rating >= 4 and any(f.too_easy for f in feedbacks):
-            note += " | 📈 Retours positifs : augmentez l'intensité dès la prochaine séance."
-        elif avg_rating <= 2 and any(f.too_hard for f in feedbacks):
-            note += " | 📉 Programme trop difficile : réduisez la charge de 10-15 % et progressez plus graduellement."
-
-    return note
+    }[level]
 
 
 # ─── Point d'entrée public ────────────────────────────────────────────────────
 
-async def build_weekly_sport_program(
-    profile: UserSportProfile,
-    previous_feedbacks: List[FeedbackRequest] = [],
-) -> SportRecommendation:
+async def build_weekly_sport_program(profile: UserSportProfile) -> SportRecommendation:
     """Génère un programme sportif hebdomadaire complet à partir du profil patient."""
     excluded_keywords = await interpret_physical_limitations(profile.limitations)
 
@@ -226,7 +208,7 @@ async def build_weekly_sport_program(
             week_index=i,
         ))
 
-    progression_notes = _compute_progression_notes(profile.fitness_level, profile.objective, previous_feedbacks)
+    progression_notes = _compute_progression_notes(profile.fitness_level, profile.objective)
 
     if profile.limitations:
         lim_str = ", ".join(profile.limitations)
