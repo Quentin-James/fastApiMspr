@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.database import get_db
-from app.models.sport import FeedbackRequest, FitnessLevel, SportRecommendation, UserSportProfile
+from app.models.sport import FitnessLevel, SportRecommendation, UserSportProfile
 from app.repositories.recommendation_repository import RecommendationRepository
 from app.services.sport_engine import build_weekly_sport_program
 from app.services.spring_client import fetch_patient_profile, push_recommendation
@@ -122,37 +122,3 @@ async def recommend_sport(
         )
 
     return recommendation
-
-
-# ─── Feedback ─────────────────────────────────────────────────────────────────
-
-@router.put(
-    "/feedback/{recommendation_id}",
-    summary="Soumettre un retour sur une recommandation sportive",
-    description=(
-        "Permet à l'utilisateur de noter la recommandation (1-5 étoiles) "
-        "et d'indiquer si elle était trop difficile / trop facile. "
-        "Ces retours alimentent la progression adaptative."
-    ),
-    status_code=status.HTTP_200_OK,
-)
-async def submit_feedback(
-    recommendation_id: str,
-    feedback: FeedbackRequest,
-    repo: RecommendationRepository = Depends(get_repo),
-) -> dict:
-    updated = await repo.update_sport_program_feedback(
-        recommendation_id, feedback.model_dump()
-    )
-
-    if not updated:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Recommandation introuvable : {recommendation_id}",
-        )
-
-    return {
-        "message": "Retour enregistré avec succès. Votre prochain programme sera adapté.",
-        "recommendation_id": recommendation_id,
-        "rating": feedback.rating,
-    }
