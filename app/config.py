@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3"
 
     # CORS
-    allowed_origins: str = "http://localhost:3000,http://localhost:8080"
+    allowed_origins: str = "http://localhost:3000,http://localhost:8080,http://localhost:5173/"
 
     # Rate limiting
     rate_limit: str = "10/minute"
