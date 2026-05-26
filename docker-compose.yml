@@ -12,8 +12,11 @@ services:
       - .env
     environment:
       - MONGODB_URL=mongodb://mongo:27017
+      - MYSQL_DATABASE_URL=mysql+pymysql://mspr:mspr@mysql:3306/mspr_users
     depends_on:
       mongo:
+        condition: service_healthy
+      mysql:
         condition: service_healthy
     networks:
       - mspr-network
@@ -65,9 +68,33 @@ services:
     profiles:
       - dev  # Démarrer avec : docker-compose --profile dev up
 
+  # ─── MySQL (comptes utilisateurs) ─────────────────────────────────────────
+  mysql:
+    image: mysql:8.4
+    container_name: mspr-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=mspr_users
+      - MYSQL_USER=mspr
+      - MYSQL_PASSWORD=mspr
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mspr-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "mspr", "-pmspr"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
 volumes:
   mongo_data:
   mongo_config:
+  mysql_data:
 
 networks:
   mspr-network:
