@@ -16,7 +16,7 @@ Développé séparément du backend Spring Boot (port 8084) conformément au cah
 |---|---|---|
 | Framework API | FastAPI + Uvicorn | 0.111 / 0.29 |
 | Validation | Pydantic v2 | 2.7 |
-| Base de données | MongoDB (Motor async) | 7 / 3.4 |
+| Base de données | MongoDB (Motor async) + MySQL (comptes utilisateurs) | 7 / 3.4 + SQLAlchemy |
 | Client HTTP async | httpx | 0.27 |
 | IA Vision | HF `nateraw/food` → Google Vision | — |
 | IA NLP | HF `google/flan-t5-large` → Ollama | — |
@@ -51,6 +51,7 @@ HUGGINGFACE_FOOD_MODEL=nateraw/food
 
 GOOGLE_VISION_API_KEY=        # Optionnel — fallback vision
 MONGODB_URL=mongodb://localhost:27017
+MYSQL_DATABASE_URL=mysql+pymysql://mspr:mspr@mysql:3306/mspr_users
 SPRING_BACKEND_URL=http://localhost:8084
 ```
 
@@ -60,7 +61,7 @@ SPRING_BACKEND_URL=http://localhost:8084
 ### 3. Lancer avec Docker Compose
 
 ```bash
-# Production (FastAPI + MongoDB)
+# Production (FastAPI + MongoDB + MySQL)
 docker-compose up -d --build
 
 # Développement (+ Mongo Express sur :8081)

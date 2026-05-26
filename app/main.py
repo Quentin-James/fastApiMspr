@@ -13,7 +13,8 @@ from slowapi.util import get_remote_address
 
 from app.config import settings
 from app.database import connect_db, close_db
-from app.routers import nutrition, sport, recommendations
+from app.relational_db import init_relational_db
+from app.routers import auth, nutrition, recommendations, sport
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 
@@ -34,7 +35,8 @@ app = FastAPI(
     description=(
         "Microservice Python / FastAPI fournissant des recommandations nutritionnelles "
         "et sportives personnalisées via Hugging Face, Google Vision API et un moteur "
-        "de règles multi-critères. Données persistées en MongoDB."
+        "de règles multi-critères. Les comptes utilisateurs sont stockés dans une base "
+        "relationnelle MySQL."
     ),
     version="1.0.0",
     docs_url="/docs",
@@ -65,6 +67,7 @@ app.add_middleware(
 async def startup():
     logger.info("🚀 Démarrage du microservice IA (env=%s, port=%s).", settings.app_env, settings.app_port)
     await connect_db()
+    init_relational_db()
 
 
 @app.on_event("shutdown")
@@ -87,3 +90,4 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(nutrition.router)
 app.include_router(sport.router)
 app.include_router(recommendations.router)
+app.include_router(auth.router)

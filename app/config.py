@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "mspr_ia"
 
+    # MySQL relationnel pour les comptes utilisateurs
+    mysql_database_url: str = "sqlite:///./mspr_users.db"
+
     # Hugging Face
     huggingface_api_token: str = ""
     huggingface_food_model: str = "google/vit-base-patch16-224"

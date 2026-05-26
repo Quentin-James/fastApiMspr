@@ -10,6 +10,11 @@ httpx==0.27.0
 pydantic==2.7.1
 pydantic-settings==2.2.1
 
+# SQL relationnel
+SQLAlchemy==2.0.30
+PyMySQL==1.1.1
+cryptography==42.0.8
+
 # MongoDB
 motor==3.4.0
 pymongo==4.7.2
