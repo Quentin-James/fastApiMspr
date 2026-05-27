@@ -1,11 +1,66 @@
-# Test your FastAPI endpoints
-
-GET http://127.0.0.1:8000/
+# Health
+GET http://127.0.0.1:8085/health
 Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/hello/User
+# Upsert profil utilisateur (MongoDB)
+PUT http://127.0.0.1:8085/users/usr_demo/profile
+Content-Type: application/json
+
+{
+	"objective": "perte_de_poids",
+	"diet_type": "vegetarian",
+	"allergies": ["arachides"],
+	"excluded_foods": ["oignon"],
+	"budget_weekly_eur": 70,
+	"daily_calories_target": 2000,
+	"available_days": ["lundi", "mercredi", "vendredi"],
+	"limitations": ["douleur genou gauche"]
+}
+
+###
+
+# Récupérer profil utilisateur
+GET http://127.0.0.1:8085/users/usr_demo/profile
+Accept: application/json
+
+###
+
+# Générer plan nutritionnel (persisté dans meal_plans)
+POST http://127.0.0.1:8085/nutrition/recommend
+Content-Type: application/json
+
+{
+	"patient_id": "usr_demo",
+	"objective": "perte_de_poids",
+	"allergies": ["arachides"],
+	"budget_weekly_eur": 70,
+	"diet_type": "vegetarian",
+	"daily_calories_target": 2000,
+	"excluded_foods": ["oignon"]
+}
+
+###
+
+# Générer programme sport (persisté dans sport_programs)
+POST http://127.0.0.1:8085/sport/recommend
+Content-Type: application/json
+
+{
+	"patient_id": "usr_demo",
+	"objective": "fat_loss",
+	"fitness_level": "beginner",
+	"equipment": "home",
+	"available_days": ["lundi", "mercredi", "vendredi"],
+	"limitations": ["douleur genou gauche"],
+	"session_duration_max_minutes": 45
+}
+
+###
+
+# Historique recommandations d'un utilisateur
+GET http://127.0.0.1:8085/users/usr_demo/recommendations?limit=10
 Accept: application/json
 
 ###

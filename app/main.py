@@ -15,6 +15,7 @@ from app.config import settings
 from app.database import connect_db, close_db
 from app.relational_db import init_relational_db
 from app.routers import auth, nutrition, recommendations, sport
+from app.routers import users
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 
@@ -90,4 +91,5 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(nutrition.router)
 app.include_router(sport.router)
 app.include_router(recommendations.router)
+app.include_router(users.router)
 app.include_router(auth.router)

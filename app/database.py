@@ -25,6 +25,10 @@ async def connect_db() -> None:
         await _db.sport_programs.create_index(
             [("patientId", ASCENDING), ("created_at", ASCENDING)]
         )
+        await _db.user_profiles.create_index(
+            [("patientId", ASCENDING)],
+            unique=True,
+        )
         logger.info("Connexion MongoDB etablie : %s / %s", settings.mongodb_url, settings.mongodb_db_name)
     except Exception as exc:
         logger.warning("MongoDB non disponible (%s) — persistence desactivee, le service continue.", exc)
