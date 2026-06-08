@@ -14,7 +14,7 @@ from slowapi.util import get_remote_address
 from app.config import settings
 from app.database import connect_db, close_db
 from app.relational_db import init_relational_db
-from app.routers import auth, nutrition, recommendations, sport
+from app.routers import auth, nutrition, recommendations, social, sport
 from app.routers import users
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
@@ -93,3 +93,9 @@ app.include_router(sport.router)
 app.include_router(recommendations.router)
 app.include_router(users.router)
 app.include_router(auth.router)
+app.include_router(social.router)
+
+
+@app.get("/health", tags=["Health"])
+async def health() -> dict:
+    return {"status": "ok"}
