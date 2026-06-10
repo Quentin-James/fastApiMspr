@@ -25,7 +25,6 @@ COPY app/ ./app/
 # Variables d'environnement par défaut (surchargées via docker-compose ou --env-file)
 ENV APP_ENV=production \
     APP_PORT=8085 \
-    MONGODB_URL=mongodb://mongo:27017 \
     MONGODB_DB_NAME=mspr_ia
 
 EXPOSE ${APP_PORT}
