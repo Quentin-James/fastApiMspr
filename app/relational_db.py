@@ -1,17 +1,34 @@
 from __future__ import annotations
 
-from sqlalchemy import create_engine
+from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app.config import settings
 
-connect_args = {}
-if settings.mysql_database_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
+
+def _build_engine_url():
+    """
+    Supabase pooler requires username 'postgres.<ref>' which contains a dot.
+    SQLAlchemy URL.create() handles this correctly unlike plain string URLs.
+    Falls back to the raw string for non-Supabase/local connections.
+    """
+    raw = settings.mysql_database_url
+    if "pooler.supabase.com" in raw:
+        from urllib.parse import urlparse
+        p = urlparse(raw)
+        return URL.create(
+            drivername=p.scheme,
+            username=p.username,
+            password=p.password,
+            host=p.hostname,
+            port=p.port,
+            database=p.path.lstrip("/"),
+        )
+    return raw
+
 
 engine = create_engine(
-    settings.mysql_database_url,
-    connect_args=connect_args,
+    _build_engine_url(),
     future=True,
     pool_pre_ping=True,
 )
