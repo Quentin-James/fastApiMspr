@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: mspr-fastapi-ia
+    runtime: docker
+    plan: free                  # passer à "starter" en prod si besoin
+    dockerfilePath: ./Dockerfile
+    region: frankfurt           # le plus proche de eu-north-1 (Supabase/Atlas)
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      # ── PostgreSQL / Supabase ──────────────────────────────────────────────
+      - key: MYSQL_DATABASE_URL
+        sync: false             # à saisir dans le dashboard Render (Settings > Environment)
+
+      # ── MongoDB Atlas ──────────────────────────────────────────────────────
+      - key: MONGODB_URL
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: mspr_ia
+
+      # ── Hugging Face ───────────────────────────────────────────────────────
+      - key: HUGGINGFACE_API_TOKEN
+        sync: false
+      - key: HUGGINGFACE_FOOD_MODEL
+        value: nateraw/food
+
+      # ── Backend Spring Boot ────────────────────────────────────────────────
+      - key: SPRING_BACKEND_URL
+        sync: false             # URL de ton backend Spring en prod
+
+      # ── CORS ───────────────────────────────────────────────────────────────
+      - key: ALLOWED_ORIGINS
+        sync: false             # ex: https://ton-frontend.vercel.app
+
+      # ── Rate limiting ──────────────────────────────────────────────────────
+      - key: RATE_LIMIT
+        value: 30/minute

@@ -28,13 +28,14 @@ ENV APP_ENV=production \
     MONGODB_URL=mongodb://mongo:27017 \
     MONGODB_DB_NAME=mspr_ia
 
-EXPOSE 8085
+EXPOSE ${APP_PORT}
 
 # Utilisateur non-root pour la sécurité
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 USER appuser
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD python -c "import httpx; httpx.get('http://localhost:8085/health').raise_for_status()"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD python -c "import httpx; httpx.get('http://localhost:'+(import os; os.environ.get('PORT','8085'))+'/health').raise_for_status()" || exit 1
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8085", "--workers", "2"]
+# Render injecte $PORT ; fallback 8085 pour les autres environnements
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8085} --workers 2"]
