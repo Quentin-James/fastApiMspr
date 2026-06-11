@@ -194,13 +194,11 @@ async def analyze_food_image(image_bytes: bytes) -> tuple[List[FoodItem], str]:
         last_error = str(exc)
         logger.error("Erreur Google Vision : %s", exc)
 
-    # En développement : fallback mock si toutes les APIs ont échoué (token configuré mais inaccessible inclus)
-    env = settings.app_env.strip().lower()
-    if env in ("development", "dev"):
-        logger.warning("⚠️ Toutes les APIs de vision ont échoué → mode MOCK (APP_ENV=%s). Dernière erreur : %s", settings.app_env, last_error)
-        return _mock_analysis()
-
-    raise RuntimeError(
-        f"Aucune API de vision disponible (Hugging Face et Google Vision ont échoué). "
-        f"Dernière erreur : {last_error}"
+    # Fallback mock : toutes les APIs ont échoué → on renvoie des données fictives
+    # plutôt qu'un 503 (utile en démo / hébergement gratuit sans clés valides)
+    logger.warning(
+        "⚠️ Toutes les APIs de vision ont échoué → mode MOCK "
+        "(APP_ENV=%s). Dernière erreur : %s",
+        settings.app_env, last_error,
     )
+    return _mock_analysis()
